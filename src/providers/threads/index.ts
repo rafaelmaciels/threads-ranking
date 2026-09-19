@@ -19,12 +19,12 @@ export function getThreadsProvider(): ThreadsDataProvider {
     case 'official':
       cachedProvider = new OfficialThreadsProvider();
       break;
-    case 'external':
-      cachedProvider = new ExternalThreadsProvider();
-      break;
     case 'mock':
-    default:
       cachedProvider = new MockThreadsProvider();
+      break;
+    case 'external':
+    default:
+      cachedProvider = new ExternalThreadsProvider();
       break;
   }
 

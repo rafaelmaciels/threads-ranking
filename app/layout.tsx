@@ -5,7 +5,7 @@ import { Footer } from '@/components/Footer';
 import './globals.css';
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-F2DPS5MLF3';
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),

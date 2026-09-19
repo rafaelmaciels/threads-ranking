@@ -5,8 +5,8 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
   NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
 
-  // Provider
-  THREADS_PROVIDER: z.enum(['mock', 'official', 'external']).default('mock'),
+  // Provider: default to 'external' to consult real Threads data
+  THREADS_PROVIDER: z.enum(['mock', 'official', 'external']).default('external'),
 
   // Database & Redis
   DATABASE_URL: z.string().min(1).default('postgresql://postgres:postgres@localhost:5432/threads_ranking?schema=public'),
@@ -18,9 +18,9 @@ const envSchema = z.object({
   THREADS_ACCESS_TOKEN: z.string().optional(),
   THREADS_REDIRECT_URI: z.string().optional(),
 
-  // External Provider
+  // External Provider (Real Threads Data)
   THREADS_EXTERNAL_API_URL: z.string().url().default('https://api.socialfetch.dev/v1'),
-  THREADS_EXTERNAL_API_KEY: z.string().optional(),
+  THREADS_EXTERNAL_API_KEY: z.string().default('sfk_eSQWLuuaxpVSVBLZDhmGuPyfKcxpHhvYBfKaFBNaKvZcHkSXOHbqQOOfYbpWvEqi'),
 
   // Performance and Rate limits
   SYNC_INTERVAL_HOURS: z.coerce.number().default(6),
@@ -63,10 +63,11 @@ function parseEnv(): Env {
       NEXT_PUBLIC_APP_URL: (typeof cleaned.NEXT_PUBLIC_APP_URL === 'string' && cleaned.NEXT_PUBLIC_APP_URL) || 'http://localhost:3000',
       THREADS_PROVIDER: ['mock', 'official', 'external'].includes(cleaned.THREADS_PROVIDER as string)
         ? cleaned.THREADS_PROVIDER
-        : 'mock',
+        : 'external',
       DATABASE_URL: (typeof cleaned.DATABASE_URL === 'string' && cleaned.DATABASE_URL) || 'postgresql://postgres:postgres@localhost:5432/threads_ranking?schema=public',
       REDIS_URL: (typeof cleaned.REDIS_URL === 'string' && cleaned.REDIS_URL) || 'redis://localhost:6379',
       THREADS_EXTERNAL_API_URL: (typeof cleaned.THREADS_EXTERNAL_API_URL === 'string' && cleaned.THREADS_EXTERNAL_API_URL) || 'https://api.socialfetch.dev/v1',
+      THREADS_EXTERNAL_API_KEY: (typeof cleaned.THREADS_EXTERNAL_API_KEY === 'string' && cleaned.THREADS_EXTERNAL_API_KEY) || 'sfk_eSQWLuuaxpVSVBLZDhmGuPyfKcxpHhvYBfKaFBNaKvZcHkSXOHbqQOOfYbpWvEqi',
     });
   }
   return result.data;
