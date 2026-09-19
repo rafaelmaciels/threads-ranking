@@ -29,18 +29,48 @@ const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>;
 
+function cleanEnv(raw: NodeJS.ProcessEnv): Record<string, unknown> {
+  const cleaned: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(raw)) {
+    if (typeof val === 'string' && val.trim() === '') {
+      continue; // Ignora strings vazias para que Zod aplique .default() ou .optional()
+    }
+    cleaned[key] = val;
+  }
+
+  // Se NEXT_PUBLIC_APP_URL não foi definido ou estava vazio, aproveita VERCEL_URL se disponível
+  if (!cleaned.NEXT_PUBLIC_APP_URL) {
+    if (raw.NEXT_PUBLIC_VERCEL_URL) {
+      cleaned.NEXT_PUBLIC_APP_URL = `https://${raw.NEXT_PUBLIC_VERCEL_URL}`;
+    } else if (raw.VERCEL_PROJECT_PRODUCTION_URL) {
+      cleaned.NEXT_PUBLIC_APP_URL = `https://${raw.VERCEL_PROJECT_PRODUCTION_URL}`;
+    } else if (raw.VERCEL_URL) {
+      cleaned.NEXT_PUBLIC_APP_URL = `https://${raw.VERCEL_URL}`;
+    }
+  }
+
+  return cleaned;
+}
+
 function parseEnv(): Env {
-  const result = envSchema.safeParse(process.env);
+  const cleaned = cleanEnv(process.env);
+  const result = envSchema.safeParse(cleaned);
+  
   if (!result.success) {
-    console.error('❌ Configuração inválida de variáveis de ambiente:', result.error.format());
-    // Força defaults aceitáveis em dev/test se algo pontual faltar
+    console.warn('⚠️ Variáveis de ambiente incompletas ou com formato inválido, aplicando fallbacks seguros:', result.error.format());
     return envSchema.parse({
-      ...process.env,
-      DATABASE_URL: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/threads_ranking?schema=public',
-      REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
+      ...cleaned,
+      NEXT_PUBLIC_APP_URL: (typeof cleaned.NEXT_PUBLIC_APP_URL === 'string' && cleaned.NEXT_PUBLIC_APP_URL) || 'http://localhost:3000',
+      THREADS_PROVIDER: ['mock', 'official', 'external'].includes(cleaned.THREADS_PROVIDER as string)
+        ? cleaned.THREADS_PROVIDER
+        : 'mock',
+      DATABASE_URL: (typeof cleaned.DATABASE_URL === 'string' && cleaned.DATABASE_URL) || 'postgresql://postgres:postgres@localhost:5432/threads_ranking?schema=public',
+      REDIS_URL: (typeof cleaned.REDIS_URL === 'string' && cleaned.REDIS_URL) || 'redis://localhost:6379',
+      THREADS_EXTERNAL_API_URL: (typeof cleaned.THREADS_EXTERNAL_API_URL === 'string' && cleaned.THREADS_EXTERNAL_API_URL) || 'https://api.socialfetch.dev/v1',
     });
   }
   return result.data;
 }
 
 export const env = parseEnv();
+
