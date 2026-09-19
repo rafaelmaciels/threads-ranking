@@ -1,0 +1,45 @@
+name: 🐛 Relato de Bug
+description: Crie um relatório para nos ajudar a identificar e corrigir um problema
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por dedicar seu tempo para reportar um bug no **Threads Ranking**!
+  - type: textarea
+    id: description
+    attributes:
+      label: Descrição do Bug
+      description: Uma descrição clara e concisa do que aconteceu de errado.
+      placeholder: Ao acessar o perfil @usuario, os números da aba 'Mais curtidos' não carregaram...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para Reproduzir
+      description: Como podemos reproduzir o erro?
+      placeholder: |
+        1. Acessar 'http://localhost:3000'
+        2. Pesquisar '@usuario'
+        3. Clicar na aba 'Mais comentados'
+        4. Ver o erro
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamento Esperado
+      description: Uma descrição clara do que você esperava que acontecesse.
+      placeholder: Deveria exibir o post com maior contagem de comentários em primeiro lugar.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Ambiente
+      description: Sistema Operacional, Navegador e versão do Node.js
+      placeholder: Windows 11 / Chrome 122 / Node.js v20.x
+    validations:
+      required: false

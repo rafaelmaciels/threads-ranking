@@ -1,0 +1,32 @@
+name: 💡 Sugestão de Funcionalidade
+description: Sugira uma ideia ou melhoria para o projeto Threads Ranking
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Tem uma ideia para tornar o **Threads Ranking** ainda melhor? Compartilhe conosco!
+  - type: textarea
+    id: problem
+    attributes:
+      label: Qual problema essa funcionalidade resolve?
+      description: Uma explicação clara de qual dor ou limitação atual sua proposta pretende solucionar.
+      placeholder: Atualmente é difícil exportar métricas consolidadas em formato CSV...
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solução Proposta
+      description: Como você imagina que essa funcionalidade deve funcionar?
+      placeholder: Adicionar um botão 'Exportar Relatório' no topo do ranking de publicações...
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto ou Referências Adicionais
+      description: Adicione links, mockups, capturas de tela ou exemplos de ferramentas similares.
+    validations:
+      required: false

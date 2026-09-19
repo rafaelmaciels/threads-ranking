@@ -1,0 +1,96 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum SyncJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model Profile {
+  id                String    @id @default(cuid())
+  threadsId         String?   @unique @map("threads_id")
+  username          String    @unique
+  name              String?
+  biography         String?   @db.Text
+  profilePictureUrl String?   @map("profile_picture_url") @db.Text
+  isVerified        Boolean   @default(false) @map("is_verified")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  lastSyncedAt      DateTime? @map("last_synced_at")
+
+  posts    Post[]
+  syncJobs SyncJob[]
+
+  @@index([username])
+  @@index([lastSyncedAt])
+  @@map("profiles")
+}
+
+model Post {
+  id           String    @id @default(cuid())
+  threadsId    String    @unique @map("threads_id")
+  profileId    String    @map("profile_id")
+  text         String?   @db.Text
+  permalink    String
+  mediaType    String?   @map("media_type")
+  mediaUrl     String?   @map("media_url") @db.Text
+  publishedAt  DateTime  @map("published_at")
+  likeCount    Int       @default(0) @map("like_count")
+  replyCount   Int       @default(0) @map("reply_count")
+  repostCount  Int       @default(0) @map("repost_count")
+  quoteCount   Int       @default(0) @map("quote_count")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  lastSyncedAt DateTime? @map("last_synced_at")
+
+  profile   Profile               @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  snapshots PostMetricSnapshot[]
+
+  @@index([profileId, likeCount(sort: Desc)])
+  @@index([profileId, replyCount(sort: Desc)])
+  @@index([profileId, repostCount(sort: Desc)])
+  @@index([profileId, quoteCount(sort: Desc)])
+  @@index([profileId, publishedAt(sort: Desc)])
+  @@index([likeCount(sort: Desc)])
+  @@map("posts")
+}
+
+model PostMetricSnapshot {
+  id          String   @id @default(cuid())
+  postId      String   @map("post_id")
+  likeCount   Int      @map("like_count")
+  replyCount  Int      @map("reply_count")
+  repostCount Int      @map("repost_count")
+  quoteCount  Int      @map("quote_count")
+  capturedAt  DateTime @default(now()) @map("captured_at")
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, capturedAt(sort: Desc)])
+  @@index([capturedAt(sort: Desc)])
+  @@map("post_metric_snapshots")
+}
+
+model SyncJob {
+  id         String        @id @default(cuid())
+  profileId  String        @map("profile_id")
+  status     SyncJobStatus @default(PENDING)
+  startedAt  DateTime?     @map("started_at")
+  finishedAt DateTime?     @map("finished_at")
+  error      String?       @db.Text
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, status])
+  @@index([createdAt(sort: Desc)])
+  @@map("sync_jobs")
+}
