@@ -11,6 +11,7 @@ export interface GetPostsOptions {
   cursor?: string;
   limit?: number;
   since?: Date;
+  until?: Date;
 }
 
 export interface ThreadsDataProvider {

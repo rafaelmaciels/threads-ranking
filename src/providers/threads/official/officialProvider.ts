@@ -77,48 +77,81 @@ export class OfficialThreadsProvider implements ThreadsDataProvider {
     const cleanUsername = profileIdOrUsername.replace(/^@/, '');
 
     const fields = 'id,media_product_type,media_type,permalink,owner,username,text,timestamp,shortcode,is_quote_post';
-    let url = `${this.baseUrl}/profile_posts?username=${cleanUsername}&fields=${fields}&access_token=${token}`;
+    const targetLimit = options?.limit ?? 50;
+    // Meta Graph API suporta no máximo limit=100 por requisição
+    const perRequestLimit = Math.min(100, targetLimit);
 
-    if (options?.limit) {
-      url += `&limit=${options.limit}`;
-    }
-    if (options?.cursor) {
-      url += `&after=${options.cursor}`;
-    }
+    let accumulatedPosts: ThreadsPost[] = [];
+    let currentCursor = options?.cursor;
+    let hasMore = true;
+    let finalNextCursor: string | undefined = undefined;
+
+    // Se o chamador especificou um cursor explicitamente, fazemos exatamente 1 página
+    // Se não passou cursor e solicitou um limit grande (> 100), paginamos até atingir o volume
+    const maxIterations = options?.cursor ? 1 : Math.ceil(targetLimit / perRequestLimit);
+    let iterations = 0;
 
     try {
-      const response = await fetch(url, { headers: { Accept: 'application/json' } });
-      const json = await response.json();
+      while (hasMore && iterations < maxIterations) {
+        iterations++;
+        let url = `${this.baseUrl}/profile_posts?username=${cleanUsername}&fields=${fields}&access_token=${token}&limit=${perRequestLimit}`;
 
-      if (!response.ok) {
-        if (response.status === 429) {
-          throw new ProviderRateLimitError(this.providerName);
+        if (currentCursor) {
+          url += `&after=${currentCursor}`;
         }
-        throw new Error(json.error?.message || 'Falha ao buscar posts na API oficial');
+        if (options?.since) {
+          url += `&since=${Math.floor(options.since.getTime() / 1000)}`;
+        }
+        if (options?.until) {
+          url += `&until=${Math.floor(options.until.getTime() / 1000)}`;
+        }
+
+        const response = await fetch(url, { headers: { Accept: 'application/json' } });
+        const json = await response.json();
+
+        if (!response.ok) {
+          if (response.status === 429) {
+            throw new ProviderRateLimitError(this.providerName);
+          }
+          throw new Error(json.error?.message || 'Falha ao buscar posts na API oficial');
+        }
+
+        const rawPosts: any[] = json.data || [];
+        const posts: ThreadsPost[] = rawPosts.map((item) => ({
+          id: item.id,
+          threadsId: item.id,
+          profileId: item.owner?.id || cleanUsername,
+          text: item.text || '',
+          permalink: item.permalink || `https://threads.net/@${cleanUsername}/post/${item.id}`,
+          mediaType: item.media_type || 'TEXT_POST',
+          publishedAt: new Date(item.timestamp),
+          metrics: {
+            // AVISO IMPORTANTE: A API oficial do Threads NÃO retorna likes de terceiros via profile_posts
+            likes: 0,
+            replies: 0,
+            reposts: 0,
+            quotes: 0,
+          },
+        }));
+
+        accumulatedPosts = accumulatedPosts.concat(posts);
+        finalNextCursor = json.paging?.cursors?.after;
+        hasMore = Boolean(json.paging?.next) && Boolean(finalNextCursor) && rawPosts.length > 0;
+        currentCursor = finalNextCursor;
+
+        if (accumulatedPosts.length >= targetLimit) {
+          break;
+        }
+
+        if (hasMore && iterations < maxIterations) {
+          await new Promise((r) => setTimeout(r, env.REQUEST_DELAY_MS));
+        }
       }
 
-      const rawPosts: any[] = json.data || [];
-      const posts: ThreadsPost[] = rawPosts.map((item) => ({
-        id: item.id,
-        threadsId: item.id,
-        profileId: item.owner?.id || cleanUsername,
-        text: item.text || '',
-        permalink: item.permalink || `https://threads.net/@${cleanUsername}/post/${item.id}`,
-        mediaType: item.media_type || 'TEXT_POST',
-        publishedAt: new Date(item.timestamp),
-        metrics: {
-          // AVISO IMPORTANTE: A API oficial do Threads NÃO retorna likes de terceiros via profile_posts
-          likes: 0,
-          replies: 0,
-          reposts: 0,
-          quotes: 0,
-        },
-      }));
-
       return {
-        data: posts,
-        nextCursor: json.paging?.cursors?.after,
-        hasMore: Boolean(json.paging?.next),
+        data: accumulatedPosts,
+        nextCursor: finalNextCursor,
+        hasMore,
       };
     } catch (err) {
       logger.error('Erro na API Oficial Threads ao buscar posts', { error: err });

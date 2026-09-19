@@ -113,6 +113,76 @@ export class MockThreadsProvider implements ThreadsDataProvider {
             quotes: 350,
           },
         },
+        {
+          id: 'mock_post_demo_6',
+          threadsId: '1789456123006',
+          profileId: 'mock_profile_demo',
+          text: 'Publicação histórica de 60 dias atrás que bateu recorde de repercussão na comunidade!',
+          permalink: 'https://threads.net/@demo/post/1789456123006',
+          publishedAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+          metrics: {
+            likes: 185000,
+            replies: 7420,
+            reposts: 12400,
+            quotes: 3100,
+          },
+        },
+        {
+          id: 'mock_post_demo_7',
+          threadsId: '1789456123007',
+          profileId: 'mock_profile_demo',
+          text: 'Reflexões sobre design de sistemas distribuídos e alta disponibilidade após 90 dias de aprendizado.',
+          permalink: 'https://threads.net/@demo/post/1789456123007',
+          publishedAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
+          metrics: {
+            likes: 142000,
+            replies: 4100,
+            reposts: 9300,
+            quotes: 1850,
+          },
+        },
+        {
+          id: 'mock_post_demo_8',
+          threadsId: '1789456123008',
+          profileId: 'mock_profile_demo',
+          text: 'O post mais viral de toda a história deste perfil: mais de 210 mil curtidas há 4 meses!',
+          permalink: 'https://threads.net/@demo/post/1789456123008',
+          publishedAt: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000),
+          metrics: {
+            likes: 210500,
+            replies: 9800,
+            reposts: 18200,
+            quotes: 4500,
+          },
+        },
+        {
+          id: 'mock_post_demo_9',
+          threadsId: '1789456123009',
+          profileId: 'mock_profile_demo',
+          text: 'Post de 5 meses atrás com debate intenso nos comentários sobre carreira tech.',
+          permalink: 'https://threads.net/@demo/post/1789456123009',
+          publishedAt: new Date(Date.now() - 150 * 24 * 60 * 60 * 1000),
+          metrics: {
+            likes: 67000,
+            replies: 6200,
+            reposts: 3400,
+            quotes: 890,
+          },
+        },
+        {
+          id: 'mock_post_demo_10',
+          threadsId: '1789456123010',
+          profileId: 'mock_profile_demo',
+          text: 'Post seminal de 6 meses atrás marcando a estreia na rede Threads!',
+          permalink: 'https://threads.net/@demo/post/1789456123010',
+          publishedAt: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000),
+          metrics: {
+            likes: 88400,
+            replies: 3100,
+            reposts: 5200,
+            quotes: 1100,
+          },
+        },
       ],
     ],
     [
@@ -144,6 +214,20 @@ export class MockThreadsProvider implements ThreadsDataProvider {
             replies: 15400,
             reposts: 22000,
             quotes: 6500,
+          },
+        },
+        {
+          id: 'mock_post_zuck_3',
+          threadsId: '1799999999003',
+          profileId: 'mock_profile_zuck',
+          text: '100 million signups in 5 days. That’s mostly organic demand and we haven’t even turned on many promotions yet.',
+          permalink: 'https://threads.net/@zuck/post/1799999999003',
+          publishedAt: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000),
+          metrics: {
+            likes: 890000,
+            replies: 54000,
+            reposts: 78000,
+            quotes: 29000,
           },
         },
       ],
@@ -181,59 +265,41 @@ export class MockThreadsProvider implements ThreadsDataProvider {
     let posts = this.mockPosts.get(cleanUsername);
 
     if (!posts) {
-      // Gera posts fictícios sob demanda para usernames arbitrários no modo mock
-      posts = [
-        {
-          id: `mock_post_${cleanUsername}_1`,
-          threadsId: `dyn_post_${cleanUsername}_1`,
+      // Gera acervo amplo de posts distribuídos historicamente para testes
+      posts = Array.from({ length: 25 }, (_, i) => {
+        const daysAgo = (i + 1) * 6;
+        const baseLikes = Math.round(Math.abs(Math.sin(i + 1)) * 75000) + 1200;
+        return {
+          id: `mock_post_${cleanUsername}_${i + 1}`,
+          threadsId: `dyn_post_${cleanUsername}_${i + 1}`,
           profileId: `mock_profile_${cleanUsername}`,
-          text: `Primeiro post em destaque de @${cleanUsername} para teste do Threads Ranking.`,
-          permalink: `https://threads.net/@${cleanUsername}/post/1`,
-          publishedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+          text: `Publicação histórica #${i + 1} de @${cleanUsername} compartilhada há ${daysAgo} dias.`,
+          permalink: `https://threads.net/@${cleanUsername}/post/${i + 1}`,
+          publishedAt: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000),
           metrics: {
-            likes: 42300,
-            replies: 410,
-            reposts: 1200,
-            quotes: 80,
+            likes: baseLikes,
+            replies: Math.round(baseLikes * 0.08),
+            reposts: Math.round(baseLikes * 0.05),
+            quotes: Math.round(baseLikes * 0.01),
           },
-        },
-        {
-          id: `mock_post_${cleanUsername}_2`,
-          threadsId: `dyn_post_${cleanUsername}_2`,
-          profileId: `mock_profile_${cleanUsername}`,
-          text: `Segundo post mais relevante de @${cleanUsername} com discussão nos comentários.`,
-          permalink: `https://threads.net/@${cleanUsername}/post/2`,
-          publishedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-          metrics: {
-            likes: 21800,
-            replies: 1540,
-            reposts: 890,
-            quotes: 40,
-          },
-        },
-        {
-          id: `mock_post_${cleanUsername}_3`,
-          threadsId: `dyn_post_${cleanUsername}_3`,
-          profileId: `mock_profile_${cleanUsername}`,
-          text: `Terceiro post com insights sobre tecnologia e engenharia de software.`,
-          permalink: `https://threads.net/@${cleanUsername}/post/3`,
-          publishedAt: new Date(Date.now() - 12 * 60 * 60 * 1000),
-          metrics: {
-            likes: 12400,
-            replies: 230,
-            reposts: 450,
-            quotes: 15,
-          },
-        },
-      ];
+        };
+      });
       this.mockPosts.set(cleanUsername, posts);
+    }
+
+    let filtered = [...posts];
+    if (options?.since) {
+      filtered = filtered.filter((p) => p.publishedAt >= options.since!);
+    }
+    if (options?.until) {
+      filtered = filtered.filter((p) => p.publishedAt <= options.until!);
     }
 
     const limit = options?.limit || 20;
     const offset = options?.cursor ? parseInt(options.cursor, 10) : 0;
-    const paginated = posts.slice(offset, offset + limit);
+    const paginated = filtered.slice(offset, offset + limit);
     const nextOffset = offset + limit;
-    const hasMore = nextOffset < posts.length;
+    const hasMore = nextOffset < filtered.length;
 
     return {
       data: paginated,

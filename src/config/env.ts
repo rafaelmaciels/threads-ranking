@@ -25,6 +25,12 @@ const envSchema = z.object({
   // Performance and Rate limits
   SYNC_INTERVAL_HOURS: z.coerce.number().default(6),
   RATE_LIMIT_MAX_REQUESTS_PER_MINUTE: z.coerce.number().default(60),
+
+  // Deep historical search and pagination controls
+  SYNC_MAX_PAGES: z.coerce.number().default(15),
+  SYNC_PAGE_SIZE: z.coerce.number().default(50),
+  MAX_HISTORICAL_POSTS: z.coerce.number().default(500),
+  REQUEST_DELAY_MS: z.coerce.number().default(200),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -68,6 +74,10 @@ function parseEnv(): Env {
       REDIS_URL: (typeof cleaned.REDIS_URL === 'string' && cleaned.REDIS_URL) || 'redis://localhost:6379',
       THREADS_EXTERNAL_API_URL: (typeof cleaned.THREADS_EXTERNAL_API_URL === 'string' && cleaned.THREADS_EXTERNAL_API_URL) || 'https://api.socialfetch.dev/v1',
       THREADS_EXTERNAL_API_KEY: (typeof cleaned.THREADS_EXTERNAL_API_KEY === 'string' && cleaned.THREADS_EXTERNAL_API_KEY) || 'sfk_eSQWLuuaxpVSVBLZDhmGuPyfKcxpHhvYBfKaFBNaKvZcHkSXOHbqQOOfYbpWvEqi',
+      SYNC_MAX_PAGES: 15,
+      SYNC_PAGE_SIZE: 50,
+      MAX_HISTORICAL_POSTS: 500,
+      REQUEST_DELAY_MS: 200,
     });
   }
   return result.data;

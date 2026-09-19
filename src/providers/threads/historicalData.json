@@ -8,9 +8,9 @@
       "profilePictureUrl": "https://scontent-lax3-2.cdninstagram.com/v/t51.82787-19/741838676_17970475917112764_2934097047510533688_n.jpg?stp=dst-jpg_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-lax3-2.cdninstagram.com&_nc_cat=100&_nc_oc=Q6cZ2gEt2RNkghtm3DtypG222gkBqmPbNjAgycBjABR_a4x6mrNX4KF9ZJ9MF5RLhMEa2W8&_nc_ohc=jT9vhD5rQKAQ7kNvwHAUPzL&_nc_gid=FFmv8LpwDwdB9aKZG9vynA&edm=APs17CUBAAAA&ccb=7-5&oh=00_AQI3lmqYu2XOfAwJzA6DWjvq7Xz3v6G37xxK_1JutpkQlQ&oe=6AB3DBA0&_nc_sid=10d13b",
       "isVerified": false,
       "lastSyncedAt": "2026-09-19T04:12:28.235Z",
-      "totalPostsIndexed": 15
+      "totalPostsIndexed": 17
     },
-    "metric": "replies",
+    "metric": "likes",
     "posts": [
       {
         "id": "3987789658770663020_63362608763",
@@ -28,7 +28,43 @@
           "quotes": 0
         },
         "rank": 1,
-        "metricValue": 57
+        "metricValue": 349
+      },
+      {
+        "id": "3966633987385335877_63362608763",
+        "threadsId": "3966633987385335877_63362608763",
+        "profileId": "rafaelost",
+        "text": "BIZARRO! o Android Studio olhou pro meu app de ~60 MB e pensou:\n\nVou precisar de quase 1,2 GB de RAM só pra buildar isso aqui. 🤡\n\nCPU: 97% | RAM: 97% | Disco: 61%\n\nTudo isso pra gerar um APK de 60mb.\n\nAndroid Studio não faz build.\n\nEle faz teste de resistência no PC.",
+        "permalink": "https://www.threads.com/@rafaelost/post/DcMUJhsGCBF",
+        "mediaType": "IMAGE",
+        "mediaUrl": "https://instagram.fcpv15-1.fna.fbcdn.net/v/t51.82787-15/775523771_17977349937112764_3511178827368384108_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=111&_nc_map=urlgen_bucketless&ig_cache_key=Mzk2NjYzMzk4NzM4NTMzNTg3Nw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkZFRUQueHBpZHMuODYxLnNkci5yZWd1bGFyX3Bob3RvLkMzIn0%3D&_nc_ohc=bhCvS59UTyYQ7kNvwG4CJYz&_nc_oc=Adqrec-0khc-eys-OVAPu3w5g1AHjtNHavadD1h2qhag7JtMnML2p0m3WnFApknv-2vrO14Z4xd-geYqe5eeY3ln&_nc_zt=23&_nc_ht=instagram.fcpv15-1.fna&_nc_gid=rLpH0eNP4L9zQlwqHklZyA&_nc_ss=7f289&oh=00_AQKG56w_4XGVZFMYYEUOOMK2Jov5PQOL7NlOuGeSNMvrtg&oe=6AB46227",
+        "publishedAt": "2026-08-18T19:00:41.000Z",
+        "metrics": {
+          "likes": 272,
+          "replies": 19,
+          "reposts": 13,
+          "quotes": 2
+        },
+        "rank": 2,
+        "metricValue": 272
+      },
+      {
+        "id": "3943430241565877863_63362608763",
+        "threadsId": "3943430241565877863_63362608763",
+        "profileId": "rafaelost",
+        "text": "Quarta eu encerrei um capítulo de mais de 30 anos da minha vida. Passei mais de três décadas refém dos óculos. Meu grau? -5 de miopia e -2 de astigmatismo. Em menos de 20 minutos de cirurgia, tudo mudou. A cena que não sai da minha cabeça foi levantar da maca e conseguir enxergar.",
+        "permalink": "https://www.threads.com/@rafaelost/post/Da54OlZESZn",
+        "mediaType": "IMAGE",
+        "mediaUrl": "https://instagram.fcpv15-1.fna.fbcdn.net/v/t51.82787-15/748327244_17972104590112764_6966425787803130242_n.webp?_nc_cat=106&_nc_map=urlgen_bucketless&ig_cache_key=Mzk0MzQzMDI0MTU2NTg3Nzg2Mw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkZFRUQueHBpZHMuMTgzMi5zZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=by2K__yDY0cQ7kNvwGx5uRh&_nc_oc=AdrDwd1gc5sSDFVgALqcJ-z-YRlzxKMYjNPqA18tx03J62IIylvFFmEX9sWfkO3LMpOgCFcNjs4UTJFQAHuxbffv&_nc_zt=23&_nc_ht=instagram.fcpv15-1.fna&_nc_gid=-4NKfedwT8qS1S3gJyxJvg&_nc_ss=7f289&oh=00_AQJzzn0-RuRi7J2sOszmahSFjzb6QJrUZewZCvA_CrL8Mw&oe=6AB46F27",
+        "publishedAt": "2026-07-17T18:38:59.000Z",
+        "metrics": {
+          "likes": 254,
+          "replies": 48,
+          "reposts": 7,
+          "quotes": 1
+        },
+        "rank": 3,
+        "metricValue": 254
       },
       {
         "id": "3985789583644233517_63362608763",
@@ -45,8 +81,8 @@
           "reposts": 8,
           "quotes": 1
         },
-        "rank": 2,
-        "metricValue": 34
+        "rank": 4,
+        "metricValue": 247
       },
       {
         "id": "3989353085989308632_63362608763",
@@ -284,7 +320,7 @@
       }
     ],
     "pagination": {
-      "total": 15,
+      "total": 17,
       "limit": 20,
       "offset": 0,
       "hasMore": false

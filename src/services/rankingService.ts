@@ -77,7 +77,8 @@ export class RankingService {
       }
 
       const mockProfile = await provider.getProfile(username);
-      const mockPostsResult = await provider.getPosts(username, { limit: 100 });
+      const targetDeepLimit = Math.max(100, Math.min(env.MAX_HISTORICAL_POSTS, 500));
+      const mockPostsResult = await provider.getPosts(username, { limit: targetDeepLimit });
 
       const postsMapped: RankedPost[] = mockPostsResult.data.map((post: any, idx: number) => {
         const pubTime = new Date(post.publishedAt).getTime();

@@ -100,7 +100,11 @@ export function ProfileView({
     try {
       setSyncing(true);
       trackEvent('refresh_profile', { username });
-      const res = await fetch(`/api/profiles/${username}/sync`, { method: 'POST' });
+      const res = await fetch(`/api/profiles/${username}/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deepSync: true }),
+      });
       const json = await res.json();
       if (!res.ok) {
         throw new Error(json.error || 'Falha ao sincronizar perfil');

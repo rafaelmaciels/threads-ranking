@@ -53,6 +53,25 @@ export class CacheService {
   }
 
   /**
+   * Remove chaves por padrão/prefixo
+   */
+  static async delByPattern(pattern: string): Promise<void> {
+    try {
+      const keys = await redis.keys(pattern);
+      if (keys.length > 0) {
+        await redis.del(...keys);
+      }
+    } catch {
+      const prefix = pattern.replace(/\*$/, '');
+      for (const k of inMemoryCache.keys()) {
+        if (k.startsWith(prefix)) {
+          inMemoryCache.delete(k);
+        }
+      }
+    }
+  }
+
+  /**
    * Controle de Rate Limit baseado em sliding window / fixed window
    */
   static async checkRateLimit(

@@ -212,14 +212,84 @@ export class ExternalThreadsProvider implements ThreadsDataProvider {
       }
     }
 
+    let endCursor: string | undefined = undefined;
+    let hasNextPage = false;
+
+    function scanForPageInfo(obj: any) {
+      if (!obj || typeof obj !== 'object' || endCursor) return;
+      if (obj.page_info && obj.page_info.end_cursor) {
+        endCursor = String(obj.page_info.end_cursor);
+        hasNextPage = Boolean(obj.page_info.has_next_page);
+        return;
+      }
+      for (const key of Object.keys(obj)) {
+        if (typeof obj[key] === 'object') {
+          scanForPageInfo(obj[key]);
+        }
+      }
+    }
+
     for (const m of matches) {
       const raw = m[1];
       if (raw.includes('like_count')) {
         try {
           const parsed = JSON.parse(raw);
           scanForPosts(parsed);
+          scanForPageInfo(parsed);
         } catch {}
       }
+    }
+
+    // 2. Consulta adicional direta via GraphQL oficial do Threads para extrair o lote completo de threads
+    try {
+      const lsdMatch = html.match(/"LSD",\[\],\{"token":"([^"]+)"\}/);
+      const lsd = lsdMatch?.[1];
+
+      let userId: string | null = null;
+      for (const m of matches) {
+        if (m[1].includes('user_id') || m[1].includes('"pk"') || m[1].includes('"id"')) {
+          const uMatch = m[1].match(/"user_id":"(\d+)"/) || m[1].match(/"pk":"(\d+)"/) || m[1].match(/"id":"(\d{8,})"/);
+          if (uMatch) {
+            userId = uMatch[1];
+            break;
+          }
+        }
+      }
+
+      if (lsd && userId) {
+        const gqlBody = new URLSearchParams({
+          lsd,
+          variables: JSON.stringify({ userID: userId }),
+          doc_id: '6232751443445612',
+        });
+
+        const gqlRes = await fetch('https://www.threads.net/api/graphql', {
+          method: 'POST',
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'X-IG-App-ID': '238260118697367',
+            'X-FB-LSD': lsd,
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Origin: 'https://www.threads.net',
+            Referer: `https://www.threads.net/@${clean}`,
+          },
+          body: gqlBody.toString(),
+        });
+
+        if (gqlRes.ok) {
+          const gqlJson = await gqlRes.json();
+          const threads = gqlJson.data?.mediaData?.threads || [];
+          for (const t of threads) {
+            const p = t.thread_items?.[0]?.post;
+            if (p && p.id) {
+              postsMap.set(String(p.id), p);
+            }
+          }
+        }
+      }
+    } catch (gqlErr) {
+      logger.warn(`Consulta GraphQL direta falhou para @${clean}, mantendo posts do HTML SSR:`, { error: gqlErr });
     }
 
     const posts: ThreadsPost[] = [...postsMap.values()].map((p: any) => {
@@ -242,7 +312,8 @@ export class ExternalThreadsProvider implements ThreadsDataProvider {
 
     return {
       data: posts,
-      hasMore: false,
+      nextCursor: endCursor,
+      hasMore: hasNextPage && Boolean(endCursor),
     };
   }
 
@@ -309,9 +380,11 @@ export class ExternalThreadsProvider implements ThreadsDataProvider {
     options?: GetPostsOptions
   ): Promise<PaginatedResult<ThreadsPost>> {
     const clean = profileIdOrUsername.replace(/^@/, '');
-    const requestedLimit = options?.limit || 25;
+    const requestedLimit = options?.limit || env.SYNC_PAGE_SIZE;
     const isInitialDeepFetch = !options?.cursor && requestedLimit > 25;
-    const maxPagesToFetch = isInitialDeepFetch ? 4 : 1;
+    const maxPagesToFetch = isInitialDeepFetch
+      ? Math.min(Math.ceil(requestedLimit / 50), env.SYNC_MAX_PAGES)
+      : 1;
 
     const hist = getHistoricalProfile(clean);
     const basePosts: ThreadsPost[] = hist ? [...hist.posts] : [];
@@ -389,6 +462,14 @@ export class ExternalThreadsProvider implements ThreadsDataProvider {
           finalNextCursor = nextCursor ? String(nextCursor) : undefined;
           if (!finalNextCursor || rawPosts.length < 10) break;
           currentCursor = finalNextCursor;
+
+          if (accumulatedPosts.length >= requestedLimit) {
+            break;
+          }
+
+          if (pagesFetched < maxPagesToFetch) {
+            await new Promise((r) => setTimeout(r, env.REQUEST_DELAY_MS));
+          }
         }
       } catch (err) {
         if (err instanceof Error && 'statusCode' in err && (err as any).statusCode === 404) throw err;
@@ -401,6 +482,9 @@ export class ExternalThreadsProvider implements ThreadsDataProvider {
       try {
         const direct = await this.fetchDirectPostsFromThreads(clean);
         accumulatedPosts = direct.data;
+        if (!finalNextCursor) {
+          finalNextCursor = direct.nextCursor;
+        }
       } catch (err) {
         if (!hist) throw err;
         logger.warn(`Coleta direta de posts para @${clean} falhou, utilizando histórico verificado:`, { error: err });

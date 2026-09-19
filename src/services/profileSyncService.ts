@@ -4,21 +4,27 @@ import { CacheService } from '@/cache/cacheService';
 import { logger } from '@/utils/logger';
 import { UsernameSchema } from '@/domain/profiles/types';
 import { SyncJobStatus } from '@prisma/client';
+import { env } from '@/config/env';
 
 export interface SyncOptions {
   maxPages?: number;
   pageSize?: number;
   forceFresh?: boolean;
+  fetchAllAvailable?: boolean;
+  since?: Date;
+  until?: Date;
 }
 
 export class ProfileSyncService {
   /**
-   * Sincroniza incrementalmente um perfil e suas postagens
+   * Sincroniza incrementalmente um perfil e suas postagens, permitindo busca profunda no histórico
    */
   static async syncProfile(rawUsername: string, options: SyncOptions = {}) {
     const username = UsernameSchema.parse(rawUsername);
-    const maxPages = options.maxPages ?? 5; // Default de até 5 páginas por ciclo para proteger rate limits
-    const pageSize = options.pageSize ?? 25;
+    const maxPages = options.fetchAllAvailable
+      ? env.SYNC_MAX_PAGES * 2
+      : (options.maxPages ?? env.SYNC_MAX_PAGES);
+    const pageSize = options.pageSize ?? env.SYNC_PAGE_SIZE;
 
     const startTime = Date.now();
     logger.info(`Iniciando sincronização do perfil @${username}`, { username });
@@ -79,6 +85,8 @@ export class ProfileSyncService {
         const pageResult = await provider.getPosts(username, {
           cursor: currentCursor,
           limit: pageSize,
+          since: options.since,
+          until: options.until,
         });
 
         if (!pageResult.data || pageResult.data.length === 0) {
@@ -145,6 +153,15 @@ export class ProfileSyncService {
 
         hasMore = pageResult.hasMore && Boolean(pageResult.nextCursor);
         currentCursor = pageResult.nextCursor;
+
+        if (totalSyncedPosts >= env.MAX_HISTORICAL_POSTS) {
+          logger.info(`Limite máximo global de posts históricos (${env.MAX_HISTORICAL_POSTS}) atingido para @${username}`);
+          break;
+        }
+
+        if (hasMore && pageCount < maxPages) {
+          await new Promise((r) => setTimeout(r, env.REQUEST_DELAY_MS));
+        }
       }
 
       // 5. Atualiza data do perfil e finaliza o job
@@ -161,8 +178,8 @@ export class ProfileSyncService {
         },
       });
 
-      // 6. Invalida caches pertinentes no Redis
-      await CacheService.del(`ranking:${username}:likes:0:20`);
+      // 6. Invalida caches pertinentes no Redis para todos os filtros do perfil
+      await CacheService.delByPattern(`ranking:${username}:*`);
       await CacheService.del(`profile:${username}`);
 
       const durationMs = Date.now() - startTime;

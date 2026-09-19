@@ -20,9 +20,11 @@ export async function POST(
       );
     }
 
+    const body = await request.json().catch(() => ({}));
     const result = await ProfileSyncService.syncProfile(username, {
-      maxPages: 5,
-      pageSize: 25,
+      maxPages: body.maxPages,
+      pageSize: body.pageSize,
+      fetchAllAvailable: Boolean(body.deepSync),
     });
 
     return NextResponse.json({
