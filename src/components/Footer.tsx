@@ -24,6 +24,9 @@ export function Footer() {
           <Link href="/trending" className="hover:text-white transition-colors">
             Perfis em Alta
           </Link>
+          <Link href="/anti-kibe" className="hover:text-white transition-colors">
+            Anti Kibe
+          </Link>
           <Link href="https://github.com/rafaelmaciels/threads-ranking" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
             GitHub
           </Link>

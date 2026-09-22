@@ -70,30 +70,35 @@ describe('Historical Ranking & Extended Period Verification', () => {
     }
   });
 
-  it('deve posicionar DcMUJhsGCBF como #2 e Da54OlZESZn como #3 no ranking de curtidas do perfil real rafaelost', async () => {
+  it('deve posicionar o post viral DddBTBxgC5o (+2k likes) em #1 no ranking de curtidas do perfil real rafaelost', async () => {
     const ranking = await RankingService.getProfileRanking('rafaelost', 'likes', { limit: 5 });
 
-    expect(ranking.posts.length).toBeGreaterThanOrEqual(4);
+    expect(ranking.posts.length).toBeGreaterThanOrEqual(5);
 
-    // Rank 1: MSN post (349 likes)
-    expect(ranking.posts[0].permalink).toContain('DdXeZECAGZs');
-    expect(ranking.posts[0].metrics.likes).toBe(349);
+    // Rank 1: Post viral recente de internet discada / mIRC (2.180 likes) - https://www.threads.com/@rafaelost/post/DddBTBxgC5o
+    expect(ranking.posts[0].permalink).toContain('DddBTBxgC5o');
+    expect(ranking.posts[0].metrics.likes).toBe(2180);
     expect(ranking.posts[0].rank).toBe(1);
 
-    // Rank 2: Android Studio post (272 likes) - https://www.threads.com/@rafaelost/post/DcMUJhsGCBF
-    expect(ranking.posts[1].permalink).toContain('DcMUJhsGCBF');
-    expect(ranking.posts[1].metrics.likes).toBe(272);
+    // Rank 2: MSN post (349 likes)
+    expect(ranking.posts[1].permalink).toContain('DdXeZECAGZs');
+    expect(ranking.posts[1].metrics.likes).toBe(349);
     expect(ranking.posts[1].rank).toBe(2);
 
-    // Rank 3: Cirurgia miopia post (254 likes) - https://www.threads.com/@rafaelost/post/Da54OlZESZn
-    expect(ranking.posts[2].permalink).toContain('Da54OlZESZn');
-    expect(ranking.posts[2].metrics.likes).toBe(254);
+    // Rank 3: Android Studio post (272 likes) - https://www.threads.com/@rafaelost/post/DcMUJhsGCBF
+    expect(ranking.posts[2].permalink).toContain('DcMUJhsGCBF');
+    expect(ranking.posts[2].metrics.likes).toBe(272);
     expect(ranking.posts[2].rank).toBe(3);
 
-    // Rank 4: Kboing post (247 likes)
-    expect(ranking.posts[3].permalink).toContain('DdQXoI6kQ8t');
-    expect(ranking.posts[3].metrics.likes).toBe(247);
+    // Rank 4: Cirurgia miopia post (254 likes) - https://www.threads.com/@rafaelost/post/Da54OlZESZn
+    expect(ranking.posts[3].permalink).toContain('Da54OlZESZn');
+    expect(ranking.posts[3].metrics.likes).toBe(254);
     expect(ranking.posts[3].rank).toBe(4);
+
+    // Rank 5: Kboing post (247 likes)
+    expect(ranking.posts[4].permalink).toContain('DdQXoI6kQ8t');
+    expect(ranking.posts[4].metrics.likes).toBe(247);
+    expect(ranking.posts[4].rank).toBe(5);
   });
 });
 

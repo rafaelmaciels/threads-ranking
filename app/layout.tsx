@@ -110,6 +110,9 @@ export default function RootLayout({
               <Link href="/trending" className="hover:text-white transition-colors">
                 Trending
               </Link>
+              <Link href="/anti-kibe" className="hover:text-white text-amber-300/90 hover:text-amber-300 font-semibold transition-colors flex items-center gap-1">
+                Anti Kibe
+              </Link>
               <Link href="/como-funciona" className="hidden sm:inline hover:text-white transition-colors">
                 Como Funciona
               </Link>
