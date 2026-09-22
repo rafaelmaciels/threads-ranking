@@ -42,6 +42,7 @@ Inspirado no clássico conceito do *Favstar* e voltado para a comunidade do Thre
   - **Mais recentes:** Linha do tempo cronológica com publicações recém-postadas.
   - **Maior crescimento:** Algoritmo de velocidade de engajamento acumulado por hora (*Growth Rate*).
 - 👤 **Metadados Oficiais do Threads:** Captura nativa da biografia autêntica do Threads, contagem real de seguidores da rede e fotos em alta definição (sem conflitos com a conta do Instagram).
+- 🛡️ **Detector de Plágio "Anti Kibe":** Comparador inteligente de postagens de perfis diferentes para identificar indícios de cópia descarada, paráfrases e conferir a linha do tempo exata de quem publicou primeiro (com N-gramas, Jaccard, Levenshtein e Kibe Score de 0 a 100%).
 - 🛡️ **Resiliência & Circuit Breaker:** Arquitetura desacoplada com fallback inteligente em memória e cache Redis, permitindo respostas em milissegundos mesmo se o banco local estiver inativo.
 - 🖼️ **Proxy de Mídia de Primeira Parte:** Entrega avatares oficiais da CDN da Meta sem falhas de CORS ou restrições de cabeçalho `Referer`.
 - 🌐 **Arquitetura SEO de Alta Performance:** Renderização Server-Side (SSR) completa, metadados dinâmicos, dados estruturados Schema.org (JSON-LD), sitemap XML dinâmico e prevenção estrita de *Soft 404*.
@@ -190,36 +191,43 @@ O projeto foi construído seguindo rigorosamente as diretrizes dos motores de bu
 - [x] Cache multinível com Redis e Circuit Breaker em memória
 - [x] Proxy seguro de primeira parte para imagens de avatar
 - [x] Arquitetura SEO completa com SSR, JSON-LD, Sitemap e Robots
-- [x] Suíte de 21 testes unitários automatizados com Vitest
+- [x] Suíte de 31 testes unitários automatizados com Vitest
 - [x] Hub de perfis em destaque (`/trending`)
+- [x] **Detector de Plágio "Anti Kibe"** (`/anti-kibe`) — Comparador de posts com N-gramas (Jaccard), Levenshtein, delta temporal e Kibe Score
 - [ ] Exportação de rankings em formato CSV e JSON
 - [ ] Notificações de novos recordes de engajamento
-- [ ] **Busca por "Kibe"** *(Recurso em planejamento conceitual — vide detalhes abaixo)*
 
 ---
 
-## 🔎 Futura Funcionalidade: Busca por "Kibe"
+## 🛡️ Funcionalidade Implantada: Detector de Plágio "Anti Kibe"
 
 > [!NOTE]
-> **Status:** Em planejamento conceitual preliminar. Esta funcionalidade **NÃO** está implementada no momento e depende da validação de viabilidade técnica, legal e dos termos de serviço da plataforma Meta.
+> **Status:** ✅ **Implantada e 100% operacional**. Disponível visualmente na rota [`/anti-kibe`](/anti-kibe) e programaticamente através da API REST em `POST /api/anti-kibe`.
 
-### Conceito
-A ideia é permitir identificar situações onde determinado conteúdo textual público tenha sido republicado, reproduzido ou copiado de maneira muito semelhante por outro usuário, oferecendo transparência sobre a cronologia original da publicação.
+A funcionalidade **Anti Kibe** identifica situações onde determinado conteúdo textual público foi reproduzido, parafraseado ou copiado por outro perfil, oferecendo transparência sobre a autoria primária e a cronologia exata de quem publicou primeiro.
 
 ```text
-@autor_original ────► Postagem em 12/08/2026: "Texto da reflexão original..."
+@autor_original ────► Postagem em 19/09/2026 03:14: "PASSOU DA MEIA-NOITE. É PULSO ÚNICO..."
                               │
-                    [Comparação de Similaridade]
+                    [Motor Algorítmico Anti Kibe]
+                    • Jaccard com N-Gramas (Bi/Trigramas)
+                    • Distância de Levenshtein Normalizada
+                    • Análise Temporal (Δt) e Estrutural
                               ▼
-@segundo_usuario ───► Postagem em 13/08/2026: "Texto quase idêntico..."
-                      Similaridade Textual: 94% • Evidência de Data
+@segundo_usuario ───► Postagem em 20/09/2026 14:20: "Passou da meia-noite galera! É pulso único..."
+                      Kibe Score: 85% • Veredito: 🚨 KIBE CONFIRMADO (35.1h depois)
 ```
 
-### Premissas e Critérios de Confiabilidade:
-1. **Linguagem Cautelosa:** O sistema nunca afirmará categoricamente *"usuário X copiou usuário Y"*. Apresentará exclusivamente fatos verificáveis: *"Possível conteúdo semelhante"* acompanhado das métricas de correspondência calculadas.
-2. **Evidências Transparentes:** Cada resultado exibirá os links diretos para as postagens originais na íntegra, com datas precisas de postagem e percentual de similaridade.
-3. **Prevenção de Falsos Positivos:** Frases populares, memes universais, notícias de última hora, hashtags e textos curtos com menos de 100 caracteres não serão classificados como cópia, prevenindo falsas acusações decorrentes de coincidências naturais.
-4. **Motor de Similaridade Não Invasivo:** Preparação para uso de técnicas combinadas como *Jaccard Similarity*, *Cosine Similarity*, *TF-IDF* e normalização semântica preservando o texto original.
+### Pilares e Métricas de Avaliação:
+1. **Autoria Primária & Cronologia ($\Delta t$):** Analisa as datas de publicação (`publishedAt`) de ambos os posts para definir o autor original e apontar quem veio depois e com quantas horas de diferença.
+2. **N-Gramas de Palavras (Jaccard):** Identifica a reprodução exata de sequências contínuas de 2 e 3 palavras.
+3. **Distância de Levenshtein:** Detecta substituições sutis de palavras, gírias e pontuações feitas pelo "kibador".
+4. **Isolamento de Trechos Idênticos:** Extrai automaticamente as frases idênticas compartilhadas para realce visual e cópia rápida.
+5. **Classificação & Veredito:**
+   - **80% a 100%:** `🚨 Kibe Confirmado` (Cópia quase idêntica / plágio descarado)
+   - **60% a 79%:** `⚠️ Suspeita Elevada` (Paráfrase ou estrutura copiada)
+   - **30% a 59%:** `💡 Inspiração Provável` (Mesmo assunto com palavras próprias)
+   - **0% a 29%:** `✅ Original` (Publicações com construções totalmente distintas)
 
 ---
 
