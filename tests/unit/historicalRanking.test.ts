@@ -1,26 +1,26 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import { MockThreadsProvider } from '@/providers/threads/mock/mockProvider';
 import { RankingService } from '@/services/rankingService';
 
 describe('Historical Ranking & Extended Period Verification', () => {
   const provider = new MockThreadsProvider();
 
-  it('deve ranquear o post mais curtido de 120 dias atrás em #1, superando o post de 6 horas atrás', async () => {
+  it('deve ranquear o post mais curtido de 120 dias atrÃ¡s em #1, superando o post de 6 horas atrÃ¡s', async () => {
     const ranking = await RankingService.getProfileRanking('demo', 'likes', { limit: 10 });
     
-    // O post mais curtido do histórico é mock_post_demo_8 (210.500 likes, 120 dias atrás)
+    // O post mais curtido do histÃ³rico Ã© mock_post_demo_8 (210.500 likes, 120 dias atrÃ¡s)
     expect(ranking.posts.length).toBeGreaterThanOrEqual(5);
     expect(ranking.posts[0].id).toBe('mock_post_demo_8');
     expect(ranking.posts[0].metrics.likes).toBe(210500);
     expect(ranking.posts[0].rank).toBe(1);
 
-    // O post mais recente (mock_post_demo_5, de 6h atrás com 32k likes) não deve ser o primeiro no ranking de likes
+    // O post mais recente (mock_post_demo_5, de 6h atrÃ¡s com 32k likes) nÃ£o deve ser o primeiro no ranking de likes
     const recentPost = ranking.posts.find((p) => p.id === 'mock_post_demo_5');
     expect(recentPost).toBeDefined();
     expect(recentPost!.rank).toBeGreaterThan(1);
   });
 
-  it('deve suportar paginação continuada por cursores para recuperar o histórico completo', async () => {
+  it('deve suportar paginaÃ§Ã£o continuada por cursores para recuperar o histÃ³rico completo', async () => {
     const page1 = await provider.getPosts('demo', { limit: 4 });
     expect(page1.data.length).toBe(4);
     expect(page1.hasMore).toBe(true);
@@ -31,14 +31,14 @@ describe('Historical Ranking & Extended Period Verification', () => {
     expect(page2.hasMore).toBe(true);
     expect(page2.nextCursor).toBe('8');
 
-    // Posts da página 2 não devem repetir posts da página 1
+    // Posts da pÃ¡gina 2 nÃ£o devem repetir posts da pÃ¡gina 1
     const idsPage1 = new Set(page1.data.map((p) => p.id));
     for (const post of page2.data) {
       expect(idsPage1.has(post.id)).toBe(false);
     }
   });
 
-  it('deve filtrar publicações por data com since e until', async () => {
+  it('deve filtrar publicaÃ§Ãµes por data com since e until', async () => {
     const sixtyDaysAgo = new Date(Date.now() - 65 * 24 * 60 * 60 * 1000);
     const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
 
@@ -54,7 +54,7 @@ describe('Historical Ranking & Extended Period Verification', () => {
     }
   });
 
-  it('deve calcular corretamente o ranking para métricas variadas (replies, reposts, quotes)', async () => {
+  it('deve calcular corretamente o ranking para mÃ©tricas variadas (replies, reposts, quotes)', async () => {
     const repliesRanking = await RankingService.getProfileRanking('demo', 'replies', { limit: 5 });
     for (let i = 0; i < repliesRanking.posts.length - 1; i++) {
       expect(repliesRanking.posts[i].metrics.replies).toBeGreaterThanOrEqual(
@@ -70,34 +70,34 @@ describe('Historical Ranking & Extended Period Verification', () => {
     }
   });
 
-  it('deve posicionar o post viral DddBTBxgC5o (+2k likes) em #1 no ranking de curtidas do perfil real rafaelost', async () => {
+  it('deve posicionar o post viral DdfL9vokazA (+2k likes) em #1 no ranking de curtidas do perfil real rafaelost', async () => {
     const ranking = await RankingService.getProfileRanking('rafaelost', 'likes', { limit: 5 });
 
     expect(ranking.posts.length).toBeGreaterThanOrEqual(5);
 
-    // Rank 1: Post viral recente de internet discada / mIRC (2.180 likes) - https://www.threads.com/@rafaelost/post/DddBTBxgC5o
-    expect(ranking.posts[0].permalink).toContain('DddBTBxgC5o');
-    expect(ranking.posts[0].metrics.likes).toBe(2180);
+    // Rank 1: Post viral recente da App Store / Baixaki / Windows XP (2.145 likes) - https://www.threads.com/@rafaelost/post/DdfL9vokazA
+    expect(ranking.posts[0].permalink).toContain('DdfL9vokazA');
+    expect(ranking.posts[0].metrics.likes).toBe(2145);
     expect(ranking.posts[0].rank).toBe(1);
 
-    // Rank 2: MSN post (349 likes)
-    expect(ranking.posts[1].permalink).toContain('DdXeZECAGZs');
-    expect(ranking.posts[1].metrics.likes).toBe(349);
+    // Rank 2: Pulso unico post (375 likes) - https://www.threads.com/@rafaelost/post/DddBTBxgC5o
+    expect(ranking.posts[1].permalink).toContain('DddBTBxgC5o');
+    expect(ranking.posts[1].metrics.likes).toBe(375);
     expect(ranking.posts[1].rank).toBe(2);
 
-    // Rank 3: Android Studio post (272 likes) - https://www.threads.com/@rafaelost/post/DcMUJhsGCBF
-    expect(ranking.posts[2].permalink).toContain('DcMUJhsGCBF');
-    expect(ranking.posts[2].metrics.likes).toBe(272);
+    // Rank 3: MSN post (349 likes) - https://www.threads.com/@rafaelost/post/DdXeZECAGZs
+    expect(ranking.posts[2].permalink).toContain('DdXeZECAGZs');
+    expect(ranking.posts[2].metrics.likes).toBe(349);
     expect(ranking.posts[2].rank).toBe(3);
 
-    // Rank 4: Cirurgia miopia post (254 likes) - https://www.threads.com/@rafaelost/post/Da54OlZESZn
-    expect(ranking.posts[3].permalink).toContain('Da54OlZESZn');
-    expect(ranking.posts[3].metrics.likes).toBe(254);
+    // Rank 4: Android Studio post (272 likes) - https://www.threads.com/@rafaelost/post/DcMUJhsGCBF
+    expect(ranking.posts[3].permalink).toContain('DcMUJhsGCBF');
+    expect(ranking.posts[3].metrics.likes).toBe(272);
     expect(ranking.posts[3].rank).toBe(4);
 
-    // Rank 5: Kboing post (247 likes)
-    expect(ranking.posts[4].permalink).toContain('DdQXoI6kQ8t');
-    expect(ranking.posts[4].metrics.likes).toBe(247);
+    // Rank 5: Cirurgia miopia post (254 likes) - https://www.threads.com/@rafaelost/post/Da54OlZESZn
+    expect(ranking.posts[4].permalink).toContain('Da54OlZESZn');
+    expect(ranking.posts[4].metrics.likes).toBe(254);
     expect(ranking.posts[4].rank).toBe(5);
   });
 });
