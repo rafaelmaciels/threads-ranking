@@ -28,6 +28,32 @@ const METRIC_TABS: { id: RankingMetric; label: string; icon: any }[] = [
   { id: 'growth', label: 'Maior crescimento', icon: TrendingUp },
 ];
 
+function PostMediaImage({ src, alt }: { src?: string | null; alt: string }) {
+  const [hasError, setHasError] = useState(false);
+
+  if (!src || hasError) {
+    return null;
+  }
+
+  if (!src.startsWith('http://') && !src.startsWith('https://')) {
+    return null;
+  }
+
+  return (
+    <div className="relative w-full max-h-[500px] overflow-hidden rounded-xl bg-[#101010] border border-[#222222] mb-4 flex items-center justify-center">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        referrerPolicy="no-referrer"
+        onError={() => setHasError(true)}
+        className="w-full h-auto max-h-[500px] object-cover rounded-xl transition-opacity duration-300"
+      />
+    </div>
+  );
+}
+
 export function ProfileView({
   username,
   initialData,
@@ -390,6 +416,18 @@ export function ProfileView({
                   <p className="text-sm text-neutral-200 leading-relaxed mb-4 whitespace-pre-line">
                     {post.text}
                   </p>
+                )}
+
+                {/* Imagem do Post (renderizada exclusivamente se possuir imagem e carregar com sucesso) */}
+                {post.mediaUrl && (
+                  <PostMediaImage
+                    src={post.mediaUrl}
+                    alt={
+                      post.text
+                        ? `Imagem da publicação: ${post.text.slice(0, 80)}`
+                        : `Imagem do post #${post.rank} de @${username}`
+                    }
+                  />
                 )}
 
                 {/* Rodapé do Post */}
