@@ -80,7 +80,16 @@ export class RankingService {
       const targetDeepLimit = Math.max(100, Math.min(env.MAX_HISTORICAL_POSTS, 500));
       const mockPostsResult = await provider.getPosts(username, { limit: targetDeepLimit });
 
-      const postsMapped: RankedPost[] = mockPostsResult.data.map((post: any, idx: number) => {
+      let workingPosts = mockPostsResult.data;
+      if (metric === 'growth') {
+        // Apenas os 10 posts mais recentes para avaliar a velocidade e engajamento atual
+        const sortedByRecent = [...mockPostsResult.data].sort(
+          (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+        );
+        workingPosts = sortedByRecent.slice(0, 10);
+      }
+
+      const postsMapped: RankedPost[] = workingPosts.map((post: any, idx: number) => {
         const pubTime = new Date(post.publishedAt).getTime();
         const hoursSincePub = Math.max(0.1, (Date.now() - pubTime) / 3600000);
         const growthPerHour = Math.round((post.metrics.likes / hoursSincePub) * 10) / 10;
@@ -114,6 +123,7 @@ export class RankingService {
       } else if (metric === 'recent') {
         postsMapped.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
       } else if (metric === 'growth') {
+        // Ordena os 10 posts mais recentes indicando em #1 o post com maior engajamento/velocidade (likes/hora)
         postsMapped.sort((a, b) => (b.growthPerHour || 0) - (a.growthPerHour || 0) || b.metrics.likes - a.metrics.likes);
       } else {
         postsMapped.sort((a, b) => b.metrics.likes - a.metrics.likes || b.metrics.replies - a.metrics.replies);
@@ -125,6 +135,7 @@ export class RankingService {
       });
 
       const paged = postsMapped.slice(offset, offset + limit);
+      const totalPostsAvailable = metric === 'growth' ? workingPosts.length : mockPostsResult.data.length;
 
       const fallbackResult: ProfileRankingResult = {
         profile: {
@@ -135,15 +146,15 @@ export class RankingService {
           profilePictureUrl: mockProfile.profilePictureUrl,
           isVerified: mockProfile.isVerified,
           lastSyncedAt: new Date(),
-          totalPostsIndexed: mockPostsResult.data.length,
+          totalPostsIndexed: totalPostsAvailable,
         },
         metric,
         posts: paged,
         pagination: {
-          total: mockPostsResult.data.length,
+          total: totalPostsAvailable,
           limit,
           offset,
-          hasMore: offset + limit < mockPostsResult.data.length,
+          hasMore: offset + limit < totalPostsAvailable,
         },
       };
 
@@ -163,26 +174,29 @@ export class RankingService {
 
     // 3. Consulta e ordenação baseada na métrica escolhida
     if (metric === 'growth') {
-      // Para growth: busca os posts recentes com seus últimos dois snapshots
-      const postsWithSnapshots = await prisma.post.findMany({
+      // Para growth: busca estritamente os 10 posts mais recentes do perfil
+      const recentPosts = await prisma.post.findMany({
         where: { profileId: profile.id },
+        orderBy: { publishedAt: 'desc' },
+        take: 10,
         include: {
           snapshots: {
             orderBy: { capturedAt: 'desc' },
             take: 2,
           },
         },
-        take: 100, // Amostra para ranking de crescimento
       });
 
-      const calculated = postsWithSnapshots.map((post) => {
+      const calculated = recentPosts.map((post) => {
         let speed = 0;
+        const hoursSincePub = Math.max(0.1, (Date.now() - post.publishedAt.getTime()) / 3600000);
+        const overallSpeed = Math.round((post.likeCount / hoursSincePub) * 10) / 10;
+
         if (post.snapshots.length >= 2) {
           const growth = calculatePostGrowth(post.snapshots[0], post.snapshots[1]);
-          speed = growth.likesPerHour;
+          speed = Math.max(growth.likesPerHour, overallSpeed);
         } else {
-          const hoursSincePub = Math.max(0.1, (Date.now() - post.publishedAt.getTime()) / 3600000);
-          speed = Math.round((post.likeCount / hoursSincePub) * 10) / 10;
+          speed = overallSpeed;
         }
 
         return {
@@ -206,8 +220,8 @@ export class RankingService {
         };
       });
 
-      // Ordena decrescente por velocidade de likes/hora
-      calculated.sort((a, b) => (b.growthPerHour ?? 0) - (a.growthPerHour ?? 0));
+      // Ordena decrescente por velocidade de engajamento (likes/hora), indicando o maior engajamento em #1
+      calculated.sort((a, b) => (b.growthPerHour ?? 0) - (a.growthPerHour ?? 0) || b.metrics.likes - a.metrics.likes);
       rankedPosts = calculated.slice(offset, offset + limit).map((p, idx) => ({
         ...p,
         rank: offset + idx + 1,
@@ -289,10 +303,10 @@ export class RankingService {
       metric,
       posts: rankedPosts,
       pagination: {
-        total: totalPostsCount,
+        total: metric === 'growth' ? Math.min(10, totalPostsCount) : totalPostsCount,
         limit,
         offset,
-        hasMore: offset + limit < totalPostsCount,
+        hasMore: offset + limit < (metric === 'growth' ? Math.min(10, totalPostsCount) : totalPostsCount),
       },
     };
 

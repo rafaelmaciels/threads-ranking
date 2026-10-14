@@ -193,6 +193,7 @@ export class ExternalThreadsProvider implements ThreadsDataProvider {
       throw new ProviderUnavailableError(this.providerName, `HTTP ${pageRes.status} ao carregar posts do Threads`);
     }
 
+    const cookieHeader = pageRes.headers.get('set-cookie');
     const html = await pageRes.text();
     const matches = [...html.matchAll(/<script[^>]*type="application\/json"[^>]*>([\s\S]*?)<\/script>/gi)];
 
@@ -240,18 +241,23 @@ export class ExternalThreadsProvider implements ThreadsDataProvider {
       }
     }
 
-    // 2. Consulta adicional direta via GraphQL oficial do Threads para extrair o lote completo de threads
+    // 2. Consulta adicional direta via GraphQL oficial do Threads para extrair o lote completo de threads com likes reais
     try {
-      const lsdMatch = html.match(/"LSD",\[\],\{"token":"([^"]+)"\}/);
+      const lsdMatch = html.match(/"LSD",\[\],\{"token":"([^"]+)"\}/) || html.match(/"token":"([a-zA-Z0-9_-]{10,})"/);
       const lsd = lsdMatch?.[1];
 
       let userId: string | null = null;
-      for (const m of matches) {
-        if (m[1].includes('user_id') || m[1].includes('"pk"') || m[1].includes('"id"')) {
-          const uMatch = m[1].match(/"user_id":"(\d+)"/) || m[1].match(/"pk":"(\d+)"/) || m[1].match(/"id":"(\d{8,})"/);
-          if (uMatch) {
-            userId = uMatch[1];
-            break;
+      const uMatch = html.match(/"user_id":"(\d+)"/) || html.match(/"pk":"(\d+)"/);
+      if (uMatch) {
+        userId = uMatch[1];
+      } else {
+        for (const m of matches) {
+          if (m[1].includes('user_id') || m[1].includes('"pk"') || m[1].includes('"id"')) {
+            const match = m[1].match(/"user_id":"(\d+)"/) || m[1].match(/"pk":"(\d+)"/) || m[1].match(/"id":"(\d{8,})"/);
+            if (match) {
+              userId = match[1];
+              break;
+            }
           }
         }
       }
@@ -263,17 +269,25 @@ export class ExternalThreadsProvider implements ThreadsDataProvider {
           doc_id: '6232751443445612',
         });
 
+        const gqlHeaders: Record<string, string> = {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'X-IG-App-ID': '238260118697367',
+          'X-FB-LSD': lsd,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Origin: 'https://www.threads.net',
+          Referer: `https://www.threads.net/@${clean}`,
+          'Sec-Fetch-Site': 'same-origin',
+          'Sec-Fetch-Mode': 'cors',
+          Accept: '*/*',
+        };
+        if (cookieHeader) {
+          gqlHeaders['Cookie'] = cookieHeader;
+        }
+
         const gqlRes = await fetch('https://www.threads.net/api/graphql', {
           method: 'POST',
-          headers: {
-            'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            'X-IG-App-ID': '238260118697367',
-            'X-FB-LSD': lsd,
-            'Content-Type': 'application/x-www-form-urlencoded',
-            Origin: 'https://www.threads.net',
-            Referer: `https://www.threads.net/@${clean}`,
-          },
+          headers: gqlHeaders,
           body: gqlBody.toString(),
         });
 
@@ -294,18 +308,33 @@ export class ExternalThreadsProvider implements ThreadsDataProvider {
 
     const posts: ThreadsPost[] = [...postsMap.values()].map((p: any) => {
       const code = p.code || '';
+      const mediaUrl =
+        p.image_versions2?.candidates?.[0]?.url ||
+        p.carousel_media?.[0]?.image_versions2?.candidates?.[0]?.url ||
+        p.video_versions?.[0]?.url ||
+        null;
+      const mediaType = p.carousel_media?.length
+        ? 'IMAGE'
+        : p.video_versions?.length
+        ? 'VIDEO'
+        : mediaUrl
+        ? 'IMAGE'
+        : 'TEXT_POST';
+
       return {
         id: String(p.id),
         threadsId: String(p.id),
         profileId: clean,
         text: p.caption?.text || p.text || '',
         permalink: code ? `https://www.threads.net/@${clean}/post/${code}` : `https://www.threads.net/@${clean}`,
+        mediaType,
+        mediaUrl,
         publishedAt: p.taken_at ? new Date(p.taken_at * 1000) : new Date(),
         metrics: {
           likes: Number(p.like_count || 0),
           replies: Number(p.reply_count || p.direct_reply_count || 0),
-          reposts: Number(p.repost_count || 0),
-          quotes: Number(p.quote_count || 0),
+          reposts: Number(p.text_post_app_info?.repost_count || p.repost_count || 0),
+          quotes: Number(p.text_post_app_info?.quote_count || p.quote_count || 0),
         },
       };
     });
@@ -500,18 +529,18 @@ export class ExternalThreadsProvider implements ThreadsDataProvider {
         return m ? m[1] : p.id.split('_')[0];
       };
 
-      // Adiciona primeiro o acervo histórico
-      for (const p of basePosts) {
+      // Adiciona primeiro os posts recentes coletados ao vivo (garante dados reais e frescos)
+      for (const p of accumulatedPosts) {
         postMap.set(getShortcode(p), p);
       }
 
-      // Mescla com posts recentes coletados ao vivo (atualizando métricas se subiram)
-      for (const p of accumulatedPosts) {
+      // Complementa com o acervo histórico para posts antigos que não vieram na listagem recente
+      for (const p of basePosts) {
         const sc = getShortcode(p);
         const existing = postMap.get(sc);
         if (existing) {
           postMap.set(sc, {
-            ...existing,
+            ...p,
             metrics: {
               likes: Math.max(existing.metrics.likes, p.metrics.likes),
               replies: Math.max(existing.metrics.replies, p.metrics.replies),
