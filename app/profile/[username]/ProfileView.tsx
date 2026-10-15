@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { RankingMetric, ProfileRankingResult, RankedPost } from '@/domain/rankings/types';
 import { trackEvent } from '@/lib/analytics';
+import { ProfileCharts } from '@/components/ProfileCharts';
 
 const METRIC_TABS: { id: RankingMetric; label: string; icon: any }[] = [
   { id: 'likes', label: 'Mais curtidos', icon: Heart },
@@ -57,11 +58,13 @@ function PostMediaImage({ src, alt }: { src?: string | null; alt: string }) {
 export function ProfileView({
   username,
   initialData,
+  initialMetric,
 }: {
   username: string;
   initialData?: ProfileRankingResult | null;
+  initialMetric?: RankingMetric;
 }) {
-  const [metric, setMetric] = useState<RankingMetric>(initialData?.metric || 'likes');
+  const [metric, setMetric] = useState<RankingMetric>(initialMetric || initialData?.metric || 'likes');
   const [data, setData] = useState<ProfileRankingResult | null>(initialData || null);
   const [loading, setLoading] = useState(!initialData);
   const [syncing, setSyncing] = useState(false);
@@ -147,6 +150,15 @@ export function ProfileView({
     if (!loadingMore && hasMore) {
       const nextOffset = offset + 20;
       fetchRanking(metric, nextOffset, true);
+    }
+  };
+
+  const handleTabClick = (tabId: RankingMetric) => {
+    setMetric(tabId);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('sort', tabId);
+      window.history.replaceState({}, '', url.toString());
     }
   };
 
@@ -287,6 +299,9 @@ export function ProfileView({
         </section>
       )}
 
+      {/* Componente de Visualização de Dados (Gráficos) */}
+      <ProfileCharts posts={posts} activeMetric={metric} username={username} />
+
       {/* Tabs / Filtros de Métricas */}
       <section aria-label="Filtros de Métricas">
         <h2 className="sr-only">Filtros de Métricas</h2>
@@ -297,7 +312,7 @@ export function ProfileView({
             return (
               <button
                 key={tab.id}
-                onClick={() => setMetric(tab.id)}
+                onClick={() => handleTabClick(tab.id)}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                   isActive
                     ? 'bg-white text-black font-semibold'
@@ -429,6 +444,31 @@ export function ProfileView({
                     }
                   />
                 )}
+
+                {/* Micro-Barra de Distribuição de Engajamento */}
+                {(() => {
+                  const mLikes = post.metrics.likes || 0;
+                  const mReplies = post.metrics.replies || 0;
+                  const mReposts = post.metrics.reposts || 0;
+                  const mQuotes = post.metrics.quotes || 0;
+                  const postTotal = mLikes + mReplies + mReposts + mQuotes;
+                  if (postTotal === 0) return null;
+                  const pL = (mLikes / postTotal) * 100;
+                  const pRep = (mReplies / postTotal) * 100;
+                  const pRepst = (mReposts / postTotal) * 100;
+                  const pQ = (mQuotes / postTotal) * 100;
+                  return (
+                    <div
+                      className="w-full h-1 bg-[#202020] rounded-full overflow-hidden flex mb-3"
+                      title={`Mix: ${Math.round(pL)}% Curtidas, ${Math.round(pRep)}% Respostas, ${Math.round(pRepst)}% Reposts, ${Math.round(pQ)}% Citações`}
+                    >
+                      <div style={{ width: `${pL}%` }} className="h-full bg-rose-500" />
+                      <div style={{ width: `${pRep}%` }} className="h-full bg-sky-400" />
+                      <div style={{ width: `${pRepst}%` }} className="h-full bg-emerald-400" />
+                      <div style={{ width: `${pQ}%` }} className="h-full bg-amber-400" />
+                    </div>
+                  );
+                })()}
 
                 {/* Rodapé do Post */}
                 <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-[#1f1f1f] text-xs text-neutral-400">

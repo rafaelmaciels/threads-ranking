@@ -175,16 +175,25 @@ export class ExternalThreadsProvider implements ThreadsDataProvider {
    * Coleta publicações reais diretamente da página HTML pública do Threads
    */
   async fetchDirectPostsFromThreads(clean: string): Promise<PaginatedResult<ThreadsPost>> {
-    const pageRes = await fetch(`https://www.threads.net/@${clean}`, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Sec-Fetch-Site': 'none',
-        'Sec-Fetch-Mode': 'navigate',
-      },
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3500);
+
+    let pageRes: Response;
+    try {
+      pageRes = await fetch(`https://www.threads.net/@${clean}`, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Sec-Fetch-Site': 'none',
+          'Sec-Fetch-Mode': 'navigate',
+        },
+      });
+    } finally {
+      clearTimeout(timer);
+    }
 
     if (!pageRes.ok) {
       if (pageRes.status === 404) {
@@ -508,15 +517,20 @@ export class ExternalThreadsProvider implements ThreadsDataProvider {
 
     // Se a API externa não retornou posts, tenta coleta direta da web pública do Threads
     if (accumulatedPosts.length === 0) {
-      try {
-        const direct = await this.fetchDirectPostsFromThreads(clean);
-        accumulatedPosts = direct.data;
-        if (!finalNextCursor) {
-          finalNextCursor = direct.nextCursor;
+      if (basePosts.length > 0) {
+        logger.info(`API externa indisponível e histórico verificado disponível para @${clean}. Utilizando histórico local.`);
+        accumulatedPosts = [...basePosts];
+      } else {
+        try {
+          const direct = await this.fetchDirectPostsFromThreads(clean);
+          accumulatedPosts = direct.data;
+          if (!finalNextCursor) {
+            finalNextCursor = direct.nextCursor;
+          }
+        } catch (err) {
+          if (!hist) throw err;
+          logger.warn(`Coleta direta de posts para @${clean} falhou, utilizando histórico verificado:`, { error: err });
         }
-      } catch (err) {
-        if (!hist) throw err;
-        logger.warn(`Coleta direta de posts para @${clean} falhou, utilizando histórico verificado:`, { error: err });
       }
     }
 

@@ -3,24 +3,48 @@ import { notFound } from 'next/navigation';
 import { ProfileView } from './ProfileView';
 import { RankingService } from '@/services/rankingService';
 import { generateProfileSchema, generateBreadcrumbSchema, getBaseUrl } from '@/lib/seo';
-import { ProfileRankingResult } from '@/domain/rankings/types';
+import { RankingMetric, ProfileRankingResult } from '@/domain/rankings/types';
 
 interface Props {
   params: Promise<{ username: string }>;
+  searchParams?: Promise<{ metric?: string; sort?: string; tab?: string }>;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+function resolveMetric(raw?: string): RankingMetric {
+  const valid: RankingMetric[] = ['likes', 'replies', 'reposts', 'quotes', 'recent', 'growth'];
+  if (raw && valid.includes(raw as RankingMetric)) {
+    return raw as RankingMetric;
+  }
+  return 'likes';
+}
+
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { username: rawUsername } = await params;
+  const sParams = searchParams ? await searchParams : {};
+  const metric = resolveMetric(sParams.sort || sParams.tab || sParams.metric);
   const clean = rawUsername.replace(/^@/, '');
 
   try {
-    const data = await RankingService.getProfileRanking(clean, 'likes', { limit: 20 });
+    const data = await RankingService.getProfileRanking(clean, metric, { limit: 20 });
     const profile = data.profile;
     const displayName = profile.name ? `${profile.name} (@${clean})` : `@${clean}`;
     const totalLikes = data.posts.reduce((acc, p) => acc + (p.metrics?.likes || 0), 0);
 
-    const title = `Posts mais curtidos de ${displayName} | Threads Ranking`;
-    const description = `Confira os posts mais curtidos e populares de @${clean} no Threads com ${
+    const metricTitle =
+      metric === 'replies'
+        ? `Posts mais comentados de ${displayName}`
+        : metric === 'reposts'
+        ? `Posts mais repostados de ${displayName}`
+        : metric === 'quotes'
+        ? `Posts mais citados de ${displayName}`
+        : metric === 'recent'
+        ? `Posts mais recentes de ${displayName}`
+        : metric === 'growth'
+        ? `Posts com maior crescimento de ${displayName}`
+        : `Posts mais curtidos de ${displayName}`;
+
+    const title = `${metricTitle} | Threads Ranking`;
+    const description = `Confira o ranking de posts de @${clean} no Threads com ${
       totalLikes > 0 ? `${totalLikes.toLocaleString('pt-BR')} curtidas acumuladas e ` : ''
     }${profile.totalPostsIndexed} publicações analisadas.`;
 
@@ -65,13 +89,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function ProfilePage({ params }: Props) {
+export default async function ProfilePage({ params, searchParams }: Props) {
   const { username: rawUsername } = await params;
+  const sParams = searchParams ? await searchParams : {};
+  const activeMetric = resolveMetric(sParams.sort || sParams.tab || sParams.metric);
   const clean = decodeURIComponent(rawUsername).replace(/^@/, '');
 
   let initialData: ProfileRankingResult | null = null;
   try {
-    initialData = await RankingService.getProfileRanking(clean, 'likes', { limit: 20 });
+    initialData = await RankingService.getProfileRanking(clean, activeMetric, { limit: 20 });
   } catch (err: any) {
     if (
       err?.code === 'PROFILE_NOT_FOUND' ||
@@ -110,7 +136,7 @@ export default async function ProfilePage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbsSchema) }}
       />
-      <ProfileView username={clean} initialData={initialData} />
+      <ProfileView username={clean} initialData={initialData} initialMetric={activeMetric} />
     </>
   );
 }

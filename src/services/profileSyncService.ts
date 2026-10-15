@@ -29,7 +29,11 @@ export class ProfileSyncService {
     const startTime = Date.now();
     logger.info(`Iniciando sincronização do perfil @${username}`, { username });
 
-    const provider = getThreadsProvider();
+    let provider = getThreadsProvider();
+    if (username === 'demo') {
+      const { MockThreadsProvider } = await import('@/providers/threads/mock/mockProvider');
+      provider = new MockThreadsProvider();
+    }
 
     // 1. Resolve os metadados do perfil via provider
     const externalProfile = await provider.getProfile(username);

@@ -129,9 +129,9 @@ export class RankingService {
         postsMapped.sort((a, b) => b.metrics.likes - a.metrics.likes || b.metrics.replies - a.metrics.replies);
       }
 
-      // Reatribui ranks após ordenação
+      // Reatribui ranks sequenciais absolutos após ordenação
       postsMapped.forEach((p, index) => {
-        p.rank = offset + index + 1;
+        p.rank = index + 1;
       });
 
       const paged = postsMapped.slice(offset, offset + limit);
@@ -227,20 +227,20 @@ export class RankingService {
         rank: offset + idx + 1,
       }));
     } else {
-      // Ordenações padrão otimizadas por índices do PostgreSQL
+      // Ordenações padrão otimizadas por índices do PostgreSQL com critérios determinísticos de desempate
       const orderByClause = (() => {
         switch (metric) {
           case 'replies':
-            return { replyCount: 'desc' as const };
+            return [{ replyCount: 'desc' as const }, { likeCount: 'desc' as const }, { publishedAt: 'desc' as const }];
           case 'reposts':
-            return { repostCount: 'desc' as const };
+            return [{ repostCount: 'desc' as const }, { likeCount: 'desc' as const }, { publishedAt: 'desc' as const }];
           case 'quotes':
-            return { quoteCount: 'desc' as const };
+            return [{ quoteCount: 'desc' as const }, { likeCount: 'desc' as const }, { publishedAt: 'desc' as const }];
           case 'recent':
-            return { publishedAt: 'desc' as const };
+            return [{ publishedAt: 'desc' as const }, { likeCount: 'desc' as const }];
           case 'likes':
           default:
-            return { likeCount: 'desc' as const };
+            return [{ likeCount: 'desc' as const }, { replyCount: 'desc' as const }, { publishedAt: 'desc' as const }];
         }
       })();
 
